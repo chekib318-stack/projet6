@@ -139,6 +139,9 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
           _circleCard(),
           const SizedBox(height:14),
           _deviceInfo(),
+          const SizedBox(height:10),
+          // ── Other nearby devices counter ──────────────────────────────
+          _nearbyCounter(),
         ]),
       ),
     );
@@ -152,8 +155,37 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
     title:Row(children:[
       Text(_dev.typeIcon,style:const TextStyle(fontSize:18)),
       const SizedBox(width:8),
-      const Expanded(child:Text('كشف القرب',
-          style:TextStyle(color:AppColors.textPrimary,fontSize:15,fontWeight:FontWeight.w600))),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('كشف القرب',
+              style:TextStyle(color:AppColors.textPrimary,
+                  fontSize:15,fontWeight:FontWeight.w600)),
+          // Animated pulsing subtitle
+          AnimatedBuilder(
+            animation: _pulse,
+            builder: (_, __) {
+              final scale = 0.85 + _pulse.value * 0.25;
+              final opacity = 0.5 + _pulse.value * 0.5;
+              return Transform.scale(
+                scale: scale,
+                alignment: Alignment.centerRight,
+                child: Opacity(
+                  opacity: opacity,
+                  child: Text(
+                    _zone == _Zone.danger
+                        ? '⚠ جهاز غش في نطاق الخطر!'
+                        : _zone == _Zone.near
+                            ? '⚡ جهاز قريب — تنبّه'
+                            : '📡 المسح نشط',
+                    style: TextStyle(
+                        color: _zone.color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700),
+                  )));
+            }),
+        ])),
     ]),
     actions:[
       TextButton.icon(
@@ -306,25 +338,26 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
                   const SizedBox(height:8),
 
                   // ── Signal bars — LTR forced, fit inside circle ─────────
-                  Directionality(
-                    textDirection: TextDirection.ltr,  // bars always left→right
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: List.generate(5, (i) {
-                        final on = i < bars;
-                        final bc = on ? _barColor(i) : AppColors.border;
-                        final h  = 22.0 + i * 10;  // smaller: 22→62 fits circle
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds:300),
-                          width: 30, height: h,
-                          margin: const EdgeInsets.symmetric(horizontal:4),
-                          decoration: BoxDecoration(
-                            color: bc,
-                            borderRadius: BorderRadius.circular(7),
-                            boxShadow: on ? [BoxShadow(
-                                color: bc.withOpacity(0.6), blurRadius:8)] : []));
-                      }))),
+                  ClipRect(  // prevents overflow rendering
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(5, (i) {
+                          final on = i < bars;
+                          final bc = on ? _barColor(i) : AppColors.border;
+                          final h  = 18.0 + i * 9;  // 18→54px — fits circle
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds:300),
+                            width: 28, height: h,
+                            margin: const EdgeInsets.symmetric(horizontal:4),
+                            decoration: BoxDecoration(
+                              color: bc,
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: on ? [BoxShadow(
+                                  color: bc.withOpacity(0.6), blurRadius:7)] : []));
+                        })))),
 
                   const SizedBox(height:10),
 
@@ -426,6 +459,66 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
       ])),
     ]));
 
+  Widget _nearbyCounter() {
+    // Count all devices in scanner that are in danger zone (< ~0.5m)
+    final dangerDevices = widget.scanner.devices.values
+        .where((d) => d.address.replaceAll(':','') !=
+            widget.device.address.replaceAll(':',''))
+        .where((d) {
+          // Rough estimate: RSSI > -57 dBm ≈ < 0.5m (same threshold as _ZoneDetector)
+          return d.rssi > -57;
+        }).toList();
+    final count = dangerDevices.length;
+    if (count == 0) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal:16, vertical:14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A0A00),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: AppColors.critical.withOpacity(0.4 + _pulse.value * 0.3),
+              width: 1.5)),
+        child: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.critical.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.critical.withOpacity(0.5))),
+            child: Center(child: Text('$count',
+                style: const TextStyle(color: AppColors.critical,
+                    fontSize: 18, fontWeight: FontWeight.w900)))),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              count == 1
+                  ? 'جهاز غش إضافي في نطاق الخطر'
+                  : '$count أجهزة غش في نطاق الخطر',
+              style: const TextStyle(color: AppColors.critical,
+                  fontSize: 14, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(
+              dangerDevices.map((d) =>
+                d.name.isNotEmpty ? d.name : d.typeLabel).join(' • '),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+              overflow: TextOverflow.ellipsis),
+          ])),
+          // Warning icon
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.critical,
+              shape: BoxShape.circle),
+            child: const Icon(Icons.warning_amber_rounded,
+                color: Colors.white, size: 18)),
+        ])));
+  }
+
   Widget _pill(String t,Color c)=>Container(
     padding:const EdgeInsets.symmetric(horizontal:10,vertical:4),
     decoration:BoxDecoration(
@@ -449,8 +542,10 @@ enum _Zone {
     _Zone.near=>const Color(0xFFFF6D00),_Zone.danger=>const Color(0xFFFF1744),
   };
   String get rangeLabel=>switch(this){
-    _Zone.far=>'بعيد\n> 2 متر',_Zone.medium=>'1 – 2 متر',
-    _Zone.near=>'50سم – 1م',_Zone.danger=>'أقل من\n50 سم',
+    _Zone.far=>'بعيد > 2م',
+    _Zone.medium=>'1 – 2 متر',
+    _Zone.near=>'50 سم – 1م',
+    _Zone.danger=>'قوة إشارة القرب\nمن جهاز الغش',
   };
   String get shortDesc=>switch(this){
     _Zone.far=>'خارج النطاق',_Zone.medium=>'في المحيط',
