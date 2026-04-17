@@ -320,7 +320,7 @@ class _FindDistanceScreenState extends State<FindDistanceScreen>
             _pill(_dev.typeLabel, Colors.white),
           ]),
         ])),
-      ]));
+      ])));
 
   // ── Main zone card ─────────────────────────────────────────────────────────
   Widget _mainCard(_Zone z, Color c) {
