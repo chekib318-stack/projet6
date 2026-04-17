@@ -260,7 +260,7 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
                 _pill(_dev.typeLabel, Colors.white),
               ]),
             ])),
-          ]));
+          ])));
     });
 
   // ── CIRCLE CARD ───────────────────────────────────────────────────────────
