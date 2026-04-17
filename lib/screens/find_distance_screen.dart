@@ -265,7 +265,7 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
                 children:[
 
                   // ── Animated sliding zone text ───────────────────────────
-                  SizedBox(height:90,
+                  SizedBox(height:76,
                     child:SlideTransition(
                       position: Tween<Offset>(
                         begin:const Offset(0,0.3), end:Offset.zero)
@@ -289,7 +289,7 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
                               key:ValueKey(_zone),
                               textAlign:TextAlign.center,
                               style:TextStyle(
-                                color:c, fontSize:22,
+                                color:c, fontSize:18,
                                 fontWeight:FontWeight.w900, height:1.2))),
                           const SizedBox(height:6),
                           AnimatedSwitcher(
@@ -305,34 +305,38 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
 
                   const SizedBox(height:8),
 
-                  // ── Signal bars — BIG, centered ──────────────────────────
-                  Row(
-                    mainAxisAlignment:MainAxisAlignment.center,
-                    crossAxisAlignment:CrossAxisAlignment.end,
-                    children:List.generate(5,(i){
-                      final on = i < bars;
-                      final bc = on ? _barColor(i) : AppColors.border;
-                      final h  = 30.0 + i * 14;
-                      return AnimatedContainer(
-                        duration:const Duration(milliseconds:300),
-                        width:36, height:h,
-                        margin:const EdgeInsets.symmetric(horizontal:4),
-                        decoration:BoxDecoration(
-                          color:bc,
-                          borderRadius:BorderRadius.circular(8),
-                          boxShadow:on?[BoxShadow(
-                              color:bc.withOpacity(0.6),blurRadius:10)]:[]));
-                    })),
+                  // ── Signal bars — LTR forced, fit inside circle ─────────
+                  Directionality(
+                    textDirection: TextDirection.ltr,  // bars always left→right
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: List.generate(5, (i) {
+                        final on = i < bars;
+                        final bc = on ? _barColor(i) : AppColors.border;
+                        final h  = 22.0 + i * 10;  // smaller: 22→62 fits circle
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds:300),
+                          width: 30, height: h,
+                          margin: const EdgeInsets.symmetric(horizontal:4),
+                          decoration: BoxDecoration(
+                            color: bc,
+                            borderRadius: BorderRadius.circular(7),
+                            boxShadow: on ? [BoxShadow(
+                                color: bc.withOpacity(0.6), blurRadius:8)] : []));
+                      }))),
 
                   const SizedBox(height:10),
 
-                  // ── Zone labels under bars ────────────────────────────────
-                  Row(children:[
-                    _zl('بعيد',  const Color(0xFF00E676), _zone==_Zone.far),
-                    _zl('متوسط', const Color(0xFFFFD600), _zone==_Zone.medium),
-                    _zl('قريب',  const Color(0xFFFF6D00), _zone==_Zone.near),
-                    _zl('خطر',   const Color(0xFFFF1744), _zone==_Zone.danger),
-                  ]),
+                  // ── Zone labels — LTR matches bars order ──────────────────
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Row(children: [
+                      _zl('بعيد',  const Color(0xFF00E676), _zone==_Zone.far),
+                      _zl('متوسط', const Color(0xFFFFD600), _zone==_Zone.medium),
+                      _zl('قريب',  const Color(0xFFFF6D00), _zone==_Zone.near),
+                      _zl('خطر',   const Color(0xFFFF1744), _zone==_Zone.danger),
+                    ])),
 
                   const SizedBox(height:14),
 
