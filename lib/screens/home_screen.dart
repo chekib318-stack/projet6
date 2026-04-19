@@ -555,13 +555,6 @@ class _HomeScreenState extends State<HomeScreen>
               style: TextStyle(color: Color(0xFFB8960C), fontSize: 12)),
           const SizedBox(height: 16),
           // Phone
-          _supportRow(Icons.phone_rounded, 'الهاتف', '+216 XX XXX XXX',
-              onTap: () async {
-                Navigator.pop(context);
-                final uri = Uri.parse('tel:+21671800000');
-                if (await canLaunchUrl(uri)) await launchUrl(uri);
-              }),
-          const SizedBox(height: 10),
           // Email
           _supportRow(Icons.email_rounded, 'البريد الإلكتروني',
               'chekib318@gmail.com',

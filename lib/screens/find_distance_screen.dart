@@ -171,8 +171,12 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
 
           const SizedBox(height: 14),
           _deviceInfo(),
+          const SizedBox(height: 12),
+          _distanceMeter(),
           const SizedBox(height: 10),
           _nearbyCounter(),
+          const SizedBox(height: 16),
+          _dismissButton(),
         ]),
       ),
     );
@@ -493,6 +497,105 @@ class _S extends State<FindDistanceScreen> with TickerProviderStateMixin {
               color: AppColors.critical, size: 22),
         ])));
   }
+
+  // ── Distance meter 0–100% ─────────────────────────────────────────────────
+  // Maps RSSI range: -90 dBm (far=0%) → -45 dBm (touching=100%)
+  Widget _distanceMeter() {
+    final rssi   = _det.median;
+    // Clamp and normalise: -90=0%, -45=100%
+    final pct    = ((rssi - (-90)) / ((-45) - (-90))).clamp(0.0, 1.0);
+    // Color: green(0-40%) → orange(40-70%) → red(70-100%)
+    final Color barC = pct < 0.4
+        ? const Color(0xFF00E676)
+        : pct < 0.7
+            ? const Color(0xFFFF6D00)
+            : const Color(0xFFFF1744);
+    final label = '${(pct * 100).toStringAsFixed(0)} %';
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Title row
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        const Text('مقياس القرب',
+            style: TextStyle(color: AppColors.textMuted,
+                fontSize: 11, letterSpacing: 0.5)),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(label,
+              key: ValueKey(label),
+              style: TextStyle(color: barC, fontSize: 14,
+                  fontWeight: FontWeight.w800))),
+      ]),
+      const SizedBox(height: 8),
+      // Progress bar
+      Container(
+        height: 22,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: AppColors.border, width: 0.5)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: pct),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOut,
+            builder: (_, v, __) => FractionallySizedBox(
+              widthFactor: v,
+              alignment: Alignment.centerLeft,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: v < 0.4
+                        ? [const Color(0xFF00E676), const Color(0xFF00C853)]
+                        : v < 0.7
+                            ? [const Color(0xFFFF9100), const Color(0xFFFF6D00)]
+                            : [const Color(0xFFFF1744), const Color(0xFFD50000)]),
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [BoxShadow(
+                      color: barC.withOpacity(0.5), blurRadius: 8)]),
+              )),
+          ))),
+      const SizedBox(height: 5),
+      // Scale labels
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(children: [
+          const Text('بعيد  0%',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 9)),
+          const Spacer(),
+          Text('${(pct * 100).toStringAsFixed(0)}%',
+              style: TextStyle(color: barC, fontSize: 10,
+                  fontWeight: FontWeight.w700)),
+          const Spacer(),
+          const Text('100%  قريب',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 9)),
+        ])),
+    ]);
+  }
+
+  // ── Dismiss button — remove device and go back ────────────────────────────
+  Widget _dismissButton() => SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      onPressed: () {
+        // Remove device from scanner's map
+        final key = widget.device.address.replaceAll(':', '');
+        widget.scanner.devices.remove(key);
+        widget.scanner.notifyListeners();
+        // Go back to main screen
+        Navigator.pop(context);
+      },
+      icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+      label: const Text('تم كشفه — انتقل للجهاز التالي',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF00803C),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14)),
+        elevation: 4),
+    ));
 
   Widget _pill(String t, Color c) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

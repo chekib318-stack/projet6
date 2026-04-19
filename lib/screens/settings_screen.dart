@@ -50,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _section('معلومات التطبيق'),
         _card(Column(children: [
           _row('اسم التطبيق',  'رصد أجهزة الغش الإلكتروني'),
-          _div(), _row('الإصدار', '2.0.0 — 2026'),
+          _div(), _row('الإصدار', '1.0.0 — 2026'),
           _div(), _row('تقنية الكشف', 'BLE 5.0 + Bluetooth Classic'),
           _div(), _row('نطاق الرصد', 'أقل من 2 متر'),
           _div(), _row('التخزين', 'محلي — بدون إرسال بيانات'),
@@ -90,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ])),
           _div(),
           _row('الوحدة',  'وزارة التربية — الجمهورية التونسية'),
-          _div(), _row('الإصدار', '2.0 — 2026'),
+          _div(), _row('الإصدار', '1.0 — 2026'),
         ])),
 
         const SizedBox(height: 24),
